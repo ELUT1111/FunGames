@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+<title>沙漏行者 · The Hourglass Wanderer</title>
+<style>
+  :root{
+    --gold:#e8c168; --gold-dim:#9c7c3a; --blue:#7fb6e8; --gray:#9aa0a8; --black:#3a3640;
+    --ink:#f3e9d2; --panel:rgba(18,14,8,.78);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;user-select:none}
+  html,body{width:100%;height:100%;overflow:hidden;background:#0c0905;
+    font-family:"Kaiti SC","STKaiti","KaiTi","Noto Serif SC",serif;color:var(--ink)}
+  #c{position:fixed;inset:0;display:block;transition:filter .9s ease}
+  body.flipping #c{filter:sepia(.35) hue-rotate(-18deg) contrast(1.1) saturate(1.25)}
+  body.hurt #c{filter:saturate(.4) contrast(1.15) sepia(.2)}
+
+  /* ---------- 通用层 ---------- */
+  .layer{position:fixed;inset:0;pointer-events:none}
+  #vignette{background:radial-gradient(ellipse at center, transparent 52%, rgba(20,10,0,.55) 100%)}
+  #flipfx{opacity:0;transition:opacity .6s ease;
+    background:
+      radial-gradient(ellipse at 50% 28%, rgba(255,220,140,.22) 0%, transparent 45%),
+      radial-gradient(ellipse at center, transparent 40%, rgba(60,30,90,.35) 100%);}
+  body.flipping #flipfx{opacity:1}
+  #hurtfx{opacity:0;background:radial-gradient(ellipse at center, transparent 45%, rgba(160,20,10,.55) 100%)}
+  #fader{background:#070503;opacity:1;transition:opacity 1.6s ease;pointer-events:none}
+
+  /* ---------- HUD ---------- */
+  #hud{opacity:0;transition:opacity 1s}
+  .hud-show #hud{opacity:1}
+  #hourglassHud{position:absolute;top:22px;left:24px;width:74px;height:118px}
+  #hgCanvas{width:74px;height:118px;filter:drop-shadow(0 0 8px rgba(232,193,104,.45))}
+  #memchips{position:absolute;top:26px;left:112px;display:flex;flex-direction:column;gap:6px}
+  .chip{display:flex;align-items:center;gap:8px;font-size:15px;letter-spacing:2px;text-shadow:0 1px 4px #000}
+  .chip i{width:13px;height:13px;border-radius:50%;display:inline-block;box-shadow:0 0 8px currentColor}
+  .chip.gold i{background:var(--gold);color:var(--gold)}
+  .chip.blue i{background:var(--blue);color:var(--blue)}
+  .chip.gray i{background:var(--gray);color:var(--gray)}
+  .chip.black i{background:#666;color:#888}
+  #integrityWrap{position:absolute;top:150px;left:26px;width:150px}
+  #integrityWrap label{font-size:12px;letter-spacing:3px;opacity:.8}
+  #integrityBar{margin-top:4px;height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
+  #integrityFill{height:100%;width:100%;background:linear-gradient(90deg,#d8b35e,#f6e3a8);border-radius:3px;transition:width .3s}
+
+  #objective{position:absolute;top:24px;right:28px;text-align:right;max-width:340px}
+  #objective .t{font-size:13px;letter-spacing:4px;color:var(--gold);opacity:.85}
+  #objective .v{margin-top:6px;font-size:18px;letter-spacing:2px;text-shadow:0 1px 6px #000}
+  #stageTag{position:absolute;top:96px;right:28px;font-size:13px;letter-spacing:3px;color:#cdb37a;opacity:.75}
+
+  #flipUi{position:absolute;bottom:30px;right:34px;width:64px;height:64px;text-align:center}
+  #flipRing{width:56px;height:56px;margin:0 auto}
+  #flipUi span{font-size:11px;letter-spacing:2px;opacity:.7}
+
+  #hint{position:absolute;bottom:46px;left:50%;transform:translateX(-50%);
+    font-size:17px;letter-spacing:3px;text-align:center;text-shadow:0 2px 8px #000;
+    background:linear-gradient(90deg,transparent,rgba(0,0,0,.45),transparent);
+    padding:8px 46px;opacity:0;transition:opacity .6s;white-space:nowrap}
+  #toast{position:absolute;top:34%;left:50%;transform:translateX(-50%);text-align:center;
+    font-size:26px;letter-spacing:8px;color:var(--gold);text-shadow:0 0 18px rgba(232,193,104,.8),0 2px 6px #000;
+    opacity:0;transition:opacity .8s}
+  #subtitle{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);max-width:760px;
+    text-align:center;font-size:19px;line-height:1.9;letter-spacing:2px;text-shadow:0 2px 8px #000;opacity:0;transition:opacity .8s}
+
+  /* ---------- 记忆抉择弹窗 ---------- */
+  #memoryModal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(8,5,2,.62);backdrop-filter:blur(3px);pointer-events:auto;z-index:30}
+  #memoryModal.open{display:flex}
+  .mem-card{width:min(620px,90vw);background:var(--panel);border:1px solid rgba(232,193,104,.35);
+    border-radius:6px;padding:38px 46px;text-align:center;
+    box-shadow:0 0 60px rgba(232,193,104,.15), inset 0 0 80px rgba(0,0,0,.5);
+    animation:cardIn .7s ease}
+  @keyframes cardIn{from{opacity:0;transform:translateY(26px) scale(.97)}to{opacity:1;transform:none}}
+  .mem-orb{width:46px;height:46px;border-radius:50%;margin:0 auto 18px;position:relative}
+  .mem-orb::after{content:'';position:absolute;inset:-12px;border-radius:50%;
+    background:inherit;filter:blur(16px);opacity:.7;z-index:-1}
+  #memColorName{font-size:13px;letter-spacing:5px;opacity:.75;margin-bottom:8px}
+  #memTitle{font-size:26px;letter-spacing:6px;margin-bottom:20px;color:var(--gold)}
+  #memStory{font-size:16.5px;line-height:2.1;letter-spacing:1.5px;text-align:justify;
+    color:#e9dfc8;margin-bottom:30px;text-indent:2em}
+  .mem-btns{display:flex;gap:22px;justify-content:center}
+  .mem-btns button{flex:1;max-width:220px;padding:13px 10px;cursor:pointer;
+    font-family:inherit;font-size:17px;letter-spacing:4px;color:var(--ink);
+    background:rgba(232,193,104,.08);border:1px solid rgba(232,193,104,.4);border-radius:4px;
+    transition:all .25s}
+  .mem-btns button small{display:block;font-size:11px;letter-spacing:2px;opacity:.6;margin-top:5px}
+  .mem-btns button:hover{background:rgba(232,193,104,.22);box-shadow:0 0 22px rgba(232,193,104,.35)}
+  .mem-btns button.bury{border-color:rgba(140,150,170,.4);background:rgba(110,120,140,.07)}
+  .mem-btns button.bury:hover{background:rgba(110,120,140,.2);box-shadow:0 0 22px rgba(120,140,180,.3)}
+
+  /* ---------- 对话框 ---------- */
+  #dialogue{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);
+    width:min(720px,92vw);background:var(--panel);border:1px solid rgba(180,200,232,.3);
+    border-radius:6px;padding:20px 30px;display:none;pointer-events:none;z-index:20}
+  #dialogue.open{display:block;animation:cardIn .4s ease}
+  #dlgName{font-size:14px;letter-spacing:4px;color:var(--blue);margin-bottom:8px}
+  #dlgText{font-size:16.5px;line-height:1.9;letter-spacing:1.5px}
+  #dlgMore{text-align:right;font-size:12px;opacity:.6;margin-top:6px;letter-spacing:2px}
+
+  /* ---------- 标题 / 暂停 / 结局 ---------- */
+  .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at 50% 38%, #2a2013 0%, #0c0905 75%);z-index:40;pointer-events:auto;
+    transition:opacity 1.2s}
+  .screen.hidden{opacity:0;pointer-events:none}
+  #title h1{font-size:64px;letter-spacing:26px;font-weight:400;color:var(--gold);
+    text-shadow:0 0 40px rgba(232,193,104,.5);margin-bottom:10px;padding-left:26px}
+  #title .en{font-size:15px;letter-spacing:8px;opacity:.55;margin-bottom:44px}
+  #title p.lore{max-width:600px;text-align:center;font-size:16px;line-height:2.2;letter-spacing:2px;
+    opacity:.8;margin-bottom:48px;padding:0 20px}
+  .btn{padding:14px 64px;font-family:inherit;font-size:19px;letter-spacing:8px;color:var(--ink);
+    background:transparent;border:1px solid rgba(232,193,104,.5);border-radius:3px;cursor:pointer;
+    transition:all .3s;padding-left:72px}
+  .btn:hover{background:rgba(232,193,104,.14);box-shadow:0 0 30px rgba(232,193,104,.3);letter-spacing:10px}
+  #title .tips{margin-top:46px;font-size:13px;letter-spacing:2px;opacity:.45;line-height:2}
+  #loadingNote{margin-top:18px;font-size:12px;opacity:.4;letter-spacing:2px}
+
+  #pause{background:rgba(8,5,2,.8)}
+  #pause h2{font-size:30px;letter-spacing:12px;margin-bottom:30px;color:var(--gold)}
+  #pause .keys{font-size:15.5px;line-height:2.4;letter-spacing:2px;opacity:.85;margin-bottom:36px}
+  #pause .keys b{color:var(--gold);display:inline-block;min-width:118px;font-weight:400}
+
+  #ending{background:#000;opacity:0;pointer-events:none;transition:opacity 3s}
+  #ending.show{opacity:1;pointer-events:auto}
+  #endTitle{font-size:44px;letter-spacing:18px;color:var(--gold);margin-bottom:34px;
+    text-shadow:0 0 30px rgba(232,193,104,.6);padding-left:18px}
+  #endText{max-width:640px;font-size:17px;line-height:2.4;letter-spacing:2px;text-align:center;
+    opacity:.9;margin-bottom:30px;padding:0 24px}
+  #endStats{font-size:14px;letter-spacing:3px;opacity:.6;margin-bottom:44px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="layer" id="flipfx"></div>
+<div class="layer" id="hurtfx"></div>
+<div class="layer" id="vignette"></div>
+
+<!-- HUD -->
+<div class="layer" id="hud">
+  <div id="hourglassHud"><canvas id="hgCanvas" width="148" height="236"></canvas></div>
+  <div id="memchips">
+    <div class="chip gold"><i></i><span id="cGold">0</span> 欢愉</div>
+    <div class="chip blue"><i></i><span id="cBlue">0</span> 离别</div>
+    <div class="chip gray"><i></i><span id="cGray">0</span> 恐惧</div>
+    <div class="chip black"><i></i><span id="cBlack">0</span> 罪悔</div>
+  </div>
+  <div id="integrityWrap"><label>躯 体 完 整</label><div id="integrityBar"><div id="integrityFill"></div></div></div>
+  <div id="objective"><div class="t">— 使 命 —</div><div class="v" id="objText">找回散落的记忆之沙</div></div>
+  <div id="stageTag">形态 · 残缺玻璃</div>
+  <div id="flipUi"><canvas id="flipRing" width="112" height="112"></canvas><span>F · 翻转</span></div>
+  <div id="hint"></div>
+  <div id="toast"></div>
+  <div id="subtitle"></div>
+</div>
+
+<!-- 记忆抉择 -->
+<div id="memoryModal">
+  <div class="mem-card">
+    <div class="mem-orb" id="memOrb"></div>
+    <div id="memColorName"></div>
+    <div id="memTitle"></div>
+    <div id="memStory"></div>
+    <div class="mem-btns">
+      <button id="btnAbsorb">融入记忆<small>沙漏充盈 · 世界复苏</small></button>
+      <button id="btnBury" class="bury">埋葬于沙<small>身轻如风 · 移速提升</small></button>
+    </div>
+  </div>
+</div>
+
+<!-- NPC 对话 -->
+<div id="dialogue">
+  <div id="dlgName"></div>
+  <div id="dlgText"></div>
+  <div id="dlgMore">E · 继续</div>
+</div>
+
+<!-- 标题画面 -->
+<div class="screen" id="title">
+  <h1>沙漏行者</h1>
+  <div class="en">THE&nbsp;HOURGLASS&nbsp;WANDERER</div>
+  <p class="lore">所有曾经存在过的文明，都已沉入无边的金色沙海。<br>
+  你是一具几乎空无一物的沙漏残躯——没有名字，没有过去。<br>
+  唯一的使命，是找回散落世界各处的记忆之沙。</p>
+  <button class="btn" id="btnStart">入 梦</button>
+  <div class="tips">WASD 移动 · 鼠标 视角 · 空格 跳跃 · F 翻转沙漏逆转时间 · E 交互 · 左键 沙之脉冲</div>
+  <div id="loadingNote">加载需联网获取 Three.js（约 600KB）</div>
+</div>
+
+<!-- 暂停 -->
+<div class="screen hidden" id="pause">
+  <h2>沙 之 间 隙</h2>
+  <div class="keys">
+    <div><b>W A S D</b>行走于沙海</div>
+    <div><b>鼠标</b>环视世界 &nbsp;·&nbsp; <b>滚轮</b>调整视距</div>
+    <div><b>空格</b>跃起（金沙形态可二段跳）</div>
+    <div><b>F</b>翻转沙漏 · 逆转周围的时间</div>
+    <div><b>E</b>与虚影交谈 / 互动</div>
+    <div><b>左键</b>沙之脉冲（驱散沙魇与沙弹）</div>
+  </div>
+  <button class="btn" id="btnResume">归 返</button>
+</div>
+
+<!-- 结局 -->
+<div class="screen hidden" id="ending">
+  <div id="endTitle"></div>
+  <div id="endText"></div>
+  <div id="endStats"></div>
+  <button class="btn" id="btnRestart">再 入 轮 回</button>
+</div>
+
+<div class="layer" id="fader"></div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/CopyShader.js"></script>
+<script src="lib/LuminosityHighPassShader.js"></script>
+<script src="lib/Pass.js"></script>
+<script src="lib/MaskPass.js"></script>
+<script src="lib/EffectComposer.js"></script>
+<script src="lib/RenderPass.js"></script>
+<script src="lib/ShaderPass.js"></script>
+<script src="lib/UnrealBloomPass.js"></script>
+
+<script src="js/core.js"></script>
+<script src="js/world.js"></script>
+<script src="js/particles.js"></script>
+<script src="js/player.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/memories.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

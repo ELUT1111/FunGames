@@ -1,0 +1,181 @@
+/* 活字灵境 —— 水墨 × 蒸汽朋克 UI */
+@font-face { font-family: 'GameKai'; src: local('KaiTi'), local('STKaiti'), local('SimSun'); }
+
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+body { font-family: 'GameKai', 'KaiTi', 'STKaiti', serif; color: #e8e2d0; }
+
+#game { position: fixed; inset: 0; display: block; }
+.hidden { display: none !important; }
+
+/* ---------- 准星 ---------- */
+#crosshair {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  font-size: 22px; color: rgba(232, 226, 208, .85); pointer-events: none;
+  text-shadow: 0 0 6px rgba(255,255,255,.6); z-index: 20;
+}
+#crosshair.can-toggle { color: #ffd87a; text-shadow: 0 0 10px #ffb84d; }
+
+/* ---------- HUD ---------- */
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+#hud-left { position: absolute; left: 24px; top: 20px; width: 230px; }
+.bar-label { font-size: 15px; letter-spacing: 4px; opacity: .85; margin-bottom: 3px; }
+.bar {
+  width: 100%; height: 12px; margin-bottom: 10px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(232,226,208,.35); border-radius: 6px; overflow: hidden;
+  box-shadow: 0 0 8px rgba(0,0,0,.8);
+}
+.bar-fill { height: 100%; width: 100%; transition: width .25s ease; border-radius: 6px; }
+.bar-fill.hp  { background: linear-gradient(90deg, #5a0f12, #b8333a, #e8616a); }
+.bar-fill.ink { background: linear-gradient(90deg, #11131a, #2e3a55, #6f86c2); }
+#stage-label { font-size: 16px; letter-spacing: 2px; color: #cfe0ff; text-shadow: 0 0 8px rgba(120,160,255,.5); }
+
+#hud-right { position: absolute; right: 24px; top: 20px; text-align: right; }
+#world-glyphs .wg {
+  display: inline-block; width: 42px; height: 42px; line-height: 40px; text-align: center;
+  font-size: 26px; margin-left: 8px; color: rgba(232,226,208,.25);
+  border: 1px solid rgba(232,226,208,.2); border-radius: 6px;
+  background: rgba(0,0,0,.45);
+}
+#world-glyphs .wg.lit {
+  color: #ffe9b0; border-color: #c9a25a;
+  text-shadow: 0 0 12px #ffcc66; box-shadow: 0 0 12px rgba(255,200,100,.25) inset;
+}
+#seal-count { margin-top: 8px; font-size: 14px; letter-spacing: 2px; color: #d8b86a; }
+
+#ability-bar { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; gap: 10px; }
+.ab-slot {
+  width: 84px; height: 56px; padding: 5px 8px;
+  background: rgba(10, 8, 6, .72); border: 1px solid rgba(201,162,90,.45); border-radius: 8px;
+  position: relative; text-align: center;
+}
+.ab-slot .ab-key { position: absolute; left: 6px; top: 3px; font-size: 11px; color: #c9a25a; }
+.ab-slot .ab-name { display: block; margin-top: 9px; font-size: 19px; letter-spacing: 2px; color: #e8e2d0; }
+.ab-slot .ab-charge { position: absolute; right: 6px; bottom: 3px; font-size: 12px; color: #9fb8e8; }
+.ab-slot.ready .ab-name { color: #ffe9b0; text-shadow: 0 0 8px rgba(255,210,120,.7); }
+.ab-slot.cd { opacity: .45; }
+
+#objective {
+  position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+  font-size: 17px; letter-spacing: 3px; color: #f0ead2;
+  background: rgba(0,0,0,.5); padding: 6px 22px; border-radius: 20px;
+  border: 1px solid rgba(232,226,208,.18); text-shadow: 0 0 6px rgba(255,255,255,.35);
+}
+#trial-hud {
+  position: absolute; top: 64px; left: 50%; transform: translateX(-50%);
+  font-size: 16px; letter-spacing: 3px; color: #ffe9b0;
+  background: rgba(20,12,4,.6); padding: 4px 20px; border-radius: 16px;
+  border: 1px solid rgba(255,216,122,.4); text-shadow: 0 0 8px rgba(255,200,100,.5);
+  display: none;
+}
+#key-hints {
+  position: absolute; right: 24px; bottom: 20px;
+  font-size: 13px; letter-spacing: 2px; color: #7a7260;
+}
+#message {
+  position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+  font-size: 19px; letter-spacing: 2px; text-align: center; color: #fff;
+  text-shadow: 0 0 10px rgba(180,200,255,.8); transition: opacity .6s; opacity: 0;
+  max-width: 70%; line-height: 1.7;
+}
+#target-tip {
+  position: absolute; left: 50%; top: 56%; transform: translateX(-50%);
+  font-size: 15px; letter-spacing: 2px; color: #ffd87a; text-shadow: 0 0 8px #000;
+  opacity: 0; transition: opacity .2s;
+}
+
+#boss-bar-wrap { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); width: 420px; text-align: center; }
+#boss-bar-wrap .bar-label { color: #ff9a9a; text-shadow: 0 0 10px #a00; }
+.bar.boss { height: 14px; border-color: rgba(255,120,120,.5); }
+.bar-fill.boss { background: linear-gradient(90deg, #30060a, #8a1020, #e03040); }
+
+/* ---------- 组合面板 / 书阁 ---------- */
+#craft-panel, #codex-panel {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 560px; max-height: 86vh; overflow-y: auto; z-index: 50;
+  background: linear-gradient(160deg, rgba(24,18,12,.96), rgba(10,9,7,.96));
+  border: 1px solid #c9a25a; border-radius: 12px; padding: 22px 28px;
+  box-shadow: 0 0 40px rgba(0,0,0,.9), 0 0 18px rgba(201,162,90,.15) inset;
+}
+#craft-panel h2, #codex-panel h2 { font-size: 24px; letter-spacing: 4px; color: #ffe9b0; margin-bottom: 4px; }
+#craft-panel h2 .sub, #codex-panel h2 .sub { font-size: 13px; color: #9a8a6a; letter-spacing: 2px; }
+#craft-panel h3, #codex-panel h3 { font-size: 15px; letter-spacing: 3px; color: #c9a25a; margin: 16px 0 8px; border-bottom: 1px dashed rgba(201,162,90,.3); padding-bottom: 4px; }
+#craft-slots { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 18px 0 10px; }
+.craft-slot, .craft-result {
+  width: 64px; height: 64px; line-height: 60px; text-align: center; font-size: 34px;
+  border: 2px dashed rgba(232,226,208,.4); border-radius: 10px; cursor: pointer;
+  background: rgba(0,0,0,.4); color: #e8e2d0;
+}
+.craft-slot.filled { border-style: solid; border-color: #c9a25a; color: #ffe9b0; text-shadow: 0 0 10px rgba(255,210,120,.6); }
+.craft-result { border-color: rgba(120,160,255,.5); color: #9fb8e8; cursor: default; }
+.craft-result.ok { border-style: solid; color: #cfe0ff; text-shadow: 0 0 12px rgba(140,180,255,.8); }
+.craft-plus, .craft-eq { font-size: 26px; color: #9a8a6a; }
+#craft-btn {
+  display: block; margin: 6px auto 2px; padding: 8px 38px; font-size: 18px; letter-spacing: 6px;
+  font-family: inherit; background: #2a1f12; color: #ffe9b0;
+  border: 1px solid #c9a25a; border-radius: 24px; cursor: pointer;
+}
+#craft-btn:hover { background: #3a2c18; box-shadow: 0 0 12px rgba(255,210,120,.3); }
+#inv-grid { display: flex; flex-wrap: wrap; gap: 8px; min-height: 50px; }
+.inv-item {
+  width: 50px; height: 50px; line-height: 46px; text-align: center; font-size: 26px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(232,226,208,.3); border-radius: 8px;
+  cursor: pointer; position: relative; color: #e8e2d0;
+}
+.inv-item:hover { border-color: #ffe9b0; box-shadow: 0 0 10px rgba(255,220,140,.25); }
+.inv-item .cnt { position: absolute; right: 2px; bottom: 0; font-size: 11px; color: #9fb8e8; }
+.inv-empty { font-size: 13px; color: #6a604e; letter-spacing: 2px; padding: 14px 0; }
+#recipe-list { font-size: 14px; line-height: 2; color: #b8ac90; letter-spacing: 1px; }
+#recipe-list .made { color: #cfe0ff; }
+.panel-hint { margin-top: 12px; font-size: 12px; color: #6a604e; text-align: center; letter-spacing: 2px; }
+
+/* 书阁内容 */
+#poem-list { font-size: 16px; line-height: 2.1; letter-spacing: 3px; color: #d8c8f0; }
+#poem-list .miss { color: #5a5266; }
+#poem-list .miss .hint { font-size: 12px; letter-spacing: 1px; color: #7a6a8a; }
+#trial-list { font-size: 14px; line-height: 1.9; color: #b8ac90; letter-spacing: 1px; }
+#trial-list .t-done { color: #ffe9b0; }
+#trial-list .t-state { float: right; }
+#ach-list { font-size: 14px; line-height: 2; color: #8a8270; letter-spacing: 1px; }
+#ach-list .got { color: #cfe0ff; }
+#codex-counters { margin-top: 14px; font-size: 12px; letter-spacing: 2px; color: #6a604e; text-align: center; }
+
+/* ---------- 全屏界面 ---------- */
+#start-screen, #death-screen, #win-screen {
+  position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  background: radial-gradient(ellipse at center, rgba(8,8,10,.92) 0%, #000 80%);
+}
+#start-screen h1, #death-screen h1, #win-screen h1 {
+  font-size: 76px; letter-spacing: 26px; font-weight: normal; color: #f0ead2;
+  text-shadow: 0 0 24px rgba(255,255,255,.4), 0 0 60px rgba(160,190,255,.25);
+  margin: 10px 0 6px; text-indent: 26px;
+}
+.subtitle { font-size: 14px; letter-spacing: 8px; color: #8a8270; margin-bottom: 26px; }
+.desc { font-size: 16px; line-height: 2.1; color: #b8b09a; letter-spacing: 2px; margin-bottom: 26px; }
+.fin { margin-top: 30px; font-size: 14px; letter-spacing: 4px; color: #8a8270; }
+.controls-grid {
+  display: grid; grid-template-columns: repeat(3, 150px); gap: 8px 18px; margin-bottom: 32px;
+  font-size: 14px; color: #9a927e; letter-spacing: 2px;
+}
+.controls-grid span { border: 1px solid rgba(232,226,208,.15); border-radius: 6px; padding: 5px 0; background: rgba(255,255,255,.03); }
+#start-btn, #respawn-btn {
+  font-family: inherit; font-size: 22px; letter-spacing: 8px; padding: 12px 52px;
+  background: transparent; color: #ffe9b0; border: 1px solid #c9a25a; border-radius: 40px; cursor: pointer;
+  transition: all .3s; text-indent: 8px;
+}
+#start-btn:hover, #respawn-btn:hover { background: rgba(201,162,90,.12); box-shadow: 0 0 24px rgba(255,210,120,.3); letter-spacing: 11px; }
+#death-screen h1 { color: #d86a6a; text-shadow: 0 0 30px rgba(200,40,40,.5); }
+#death-screen p { color: #9a8a8a; letter-spacing: 3px; margin-bottom: 30px; }
+#win-screen h1 { color: #ffe9b0; text-shadow: 0 0 40px rgba(255,210,120,.6); }
+
+.title-glyphs { height: 60px; font-size: 30px; color: rgba(232,226,208,.3); letter-spacing: 16px; overflow: hidden; }
+
+/* ---------- 滤镜层 ---------- */
+#tint-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 15; transition: background 1s; }
+#flash-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 16; background: #fff; opacity: 0; }
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(201,162,90,.4); border-radius: 4px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,.3); }

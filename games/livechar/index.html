@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>活字灵境 · Living Type</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- 准星 -->
+<div id="crosshair" class="hidden">+</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="hud-left">
+    <div class="bar-label">墨魂</div>
+    <div class="bar"><div id="hp-bar" class="bar-fill hp"></div></div>
+    <div class="bar-label">墨量</div>
+    <div class="bar"><div id="ink-bar" class="bar-fill ink"></div></div>
+    <div id="stage-label">字形态 ·「人」</div>
+  </div>
+  <div id="hud-right">
+    <div id="world-glyphs">
+      <span class="wg" data-g="山">山</span>
+      <span class="wg" data-g="水">水</span>
+      <span class="wg" data-g="树">树</span>
+      <span class="wg" data-g="城">城</span>
+    </div>
+    <div id="seal-count">古印 0 / 3</div>
+  </div>
+  <div id="ability-bar">
+    <div class="ab-slot" data-slot="0"><span class="ab-key">1</span><span class="ab-name">—</span><span class="ab-charge"></span></div>
+    <div class="ab-slot" data-slot="1"><span class="ab-key">2</span><span class="ab-name">—</span><span class="ab-charge"></span></div>
+    <div class="ab-slot" data-slot="2"><span class="ab-key">3</span><span class="ab-name">—</span><span class="ab-charge"></span></div>
+    <div class="ab-slot" data-slot="3"><span class="ab-key">4</span><span class="ab-name">—</span><span class="ab-charge"></span></div>
+    <div class="ab-slot" data-slot="4"><span class="ab-key">5</span><span class="ab-name">—</span><span class="ab-charge"></span></div>
+    <div class="ab-slot" data-slot="5"><span class="ab-key">6</span><span class="ab-name">—</span><span class="ab-charge"></span></div>
+  </div>
+  <div id="objective"></div>
+  <div id="trial-hud"></div>
+  <div id="message"></div>
+  <div id="target-tip"></div>
+  <div id="boss-bar-wrap" class="hidden"><div class="bar-label">噬 · 蚀文之主</div><div class="bar boss"><div id="boss-bar" class="bar-fill boss"></div></div></div>
+  <div id="key-hints">C 活字工坊 · J 书阁图鉴</div>
+</div>
+
+<!-- 书阁(支线图鉴) -->
+<div id="codex-panel" class="hidden">
+  <h2>书 阁 <span class="sub">— 残诗 · 试炼 · 成就</span></h2>
+  <h3>《活字谣》残句</h3>
+  <div id="poem-list"></div>
+  <h3>试炼三坛(永久强化)</h3>
+  <div id="trial-list"></div>
+  <h3>成就</h3>
+  <div id="ach-list"></div>
+  <div id="codex-counters"></div>
+  <div class="panel-hint">按 J 关闭 · 残句与试炼皆为非强制支线,自由探索</div>
+</div>
+
+<!-- 组合面板 -->
+<div id="craft-panel" class="hidden">
+  <h2>活字工坊 <span class="sub">— 排字 · 合文 · 铸法</span></h2>
+  <div id="craft-slots">
+    <div class="craft-slot" id="slot-a">？</div>
+    <div class="craft-plus">+</div>
+    <div class="craft-slot" id="slot-b">？</div>
+    <div class="craft-eq">=</div>
+    <div class="craft-result" id="craft-result">？</div>
+  </div>
+  <button id="craft-btn">合 文</button>
+  <h3>活字背包</h3>
+  <div id="inv-grid"></div>
+  <h3>法书残页（配方）</h3>
+  <div id="recipe-list"></div>
+  <div class="panel-hint">按 C 关闭 · 点击活字放入组合槽</div>
+</div>
+
+<!-- 开始界面 -->
+<div id="start-screen">
+  <div class="title-glyphs" id="title-glyphs"></div>
+  <h1>活字灵境</h1>
+  <p class="subtitle">LIVING TYPE · 墨与字的史诗</p>
+  <p class="desc">
+    天地玄黄之前，世界只是一卷未排版的虚空。<br>
+    你是一枚拥有自我意识的活字——「人」。<br>
+    收集散落的活字，让文字隆起为山、流淌成水、生长为树、铸造为城。<br>
+    凡所书写，皆成真实。
+  </p>
+  <div class="controls-grid">
+    <span>WASD 移动</span><span>空格 跳跃</span><span>Shift 墨遁</span>
+    <span>左键 墨痕斩</span><span>右键 反墨盾</span><span>F 具象 / 抽象</span>
+    <span>C 活字工坊</span><span>Q 写「轻」</span><span>X 点「慢」</span>
+    <span>R 写「灯」</span><span>T 写「引」</span><span>G 写「门」</span>
+  </div>
+  <button id="start-btn">落 笔 启 世</button>
+</div>
+
+<!-- 死亡界面 -->
+<div id="death-screen" class="hidden">
+  <h1>墨 散</h1>
+  <p>字魂离散，归于虚空…… 但活字不灭。</p>
+  <button id="respawn-btn">重 凝 字 魂</button>
+</div>
+
+<!-- 胜利界面 -->
+<div id="win-screen" class="hidden">
+  <h1>书 成</h1>
+  <p class="desc">
+    蚀文之主「噬」崩解为漫天残字，坠入墨海。<br>
+    你翻开自己——一本由无数活字装订而成的活书，<br>
+    山河、城邦、风与火，皆是你写下的章节。<br><br>
+    <b>从此，世界由你执笔。</b>
+  </p>
+  <p class="fin">—— 活字灵境 · 原型完 ——</p>
+</div>
+
+<div id="tint-overlay"></div>
+<div id="flash-overlay"></div>
+
+<script src="lib/three.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/sky.js"></script>
+<script src="js/world.js"></script>
+<script src="js/player.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/systems.js"></script>
+<script src="js/quests.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

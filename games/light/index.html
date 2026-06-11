@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>棱镜光鱼 · PRISM LUMEN</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#0a0c10;
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif; color:#dfe8f2; user-select:none; }
+  #app, #app canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .hidden { display:none !important; }
+
+  /* ---------- HUD ---------- */
+  #hud { position:absolute; inset:0; pointer-events:none; z-index:5; }
+  #tl { position:absolute; top:16px; left:16px; width:240px;
+    background:rgba(8,12,20,.55); border:1px solid rgba(140,180,255,.25);
+    border-radius:10px; padding:12px 14px; backdrop-filter:blur(4px); }
+  #tl .label { font-size:12px; letter-spacing:1px; opacity:.85; margin-bottom:4px; }
+  .bar { height:10px; border-radius:5px; background:rgba(255,255,255,.08); overflow:hidden; margin-bottom:10px; }
+  .bar > div { height:100%; width:0%; border-radius:5px; transition:width .25s; }
+  #reviveFill { background:linear-gradient(90deg,#666,#3b6cff,#35e8ff,#3bff8e,#ffe93b,#ff9233,#ff3b4e,#b44bff); }
+  #hpFill { background:linear-gradient(90deg,#ff3b4e,#ff8a7a); }
+  #stage { font-size:13px; color:#9fd8ff; text-shadow:0 0 8px rgba(80,180,255,.6); }
+
+  #tr { position:absolute; top:16px; right:16px; display:flex; flex-direction:column; gap:5px;
+    background:rgba(8,12,20,.55); border:1px solid rgba(140,180,255,.25);
+    border-radius:10px; padding:10px 12px; backdrop-filter:blur(4px); }
+  .chip { display:flex; align-items:center; gap:8px; font-size:13px; }
+  .chip .dot { width:12px; height:12px; border-radius:50%; box-shadow:0 0 8px currentColor; }
+  .chip .cnt { min-width:24px; text-align:right; font-variant-numeric:tabular-nums; }
+
+  /* ---------- 模式槽 ---------- */
+  #modes { position:absolute; bottom:18px; left:50%; transform:translateX(-50%);
+    display:flex; gap:10px; pointer-events:none; }
+  .slot { position:relative; width:64px; height:64px; border-radius:12px; overflow:hidden;
+    background:rgba(8,12,20,.6); border:2px solid rgba(255,255,255,.15);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size:11px; line-height:1.25; text-align:center; transition:border-color .2s, box-shadow .2s; }
+  .slot .k { font-size:14px; font-weight:700; opacity:.9; }
+  .slot.locked { opacity:.35; filter:grayscale(1); }
+  .slot.active { border-color:#fff; box-shadow:0 0 16px var(--c,#fff), inset 0 0 12px rgba(255,255,255,.15); }
+  .slot .cd { position:absolute; left:0; bottom:0; width:100%; height:0%;
+    background:rgba(0,0,0,.65); pointer-events:none; }
+
+  #hint { position:absolute; bottom:18px; left:16px; font-size:12px; opacity:.55; max-width:320px; line-height:1.7; }
+  #fusionTag { position:absolute; bottom:96px; left:50%; transform:translateX(-50%);
+    font-size:14px; padding:4px 14px; border-radius:14px; background:rgba(8,12,20,.6);
+    border:1px solid currentColor; text-shadow:0 0 10px currentColor; }
+
+  /* ---------- 提示弹幕 ---------- */
+  #toasts { position:absolute; top:22%; left:50%; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .toast { font-size:20px; font-weight:700; letter-spacing:2px; padding:6px 22px; border-radius:18px;
+    background:rgba(5,8,16,.55); border:1px solid currentColor;
+    text-shadow:0 0 14px currentColor; animation:toastIn 2.6s ease forwards; }
+  @keyframes toastIn {
+    0% { opacity:0; transform:translateY(14px) scale(.92); }
+    12% { opacity:1; transform:translateY(0) scale(1); }
+    80% { opacity:1; }
+    100% { opacity:0; transform:translateY(-12px); }
+  }
+
+  #dmg { position:absolute; inset:0; pointer-events:none; opacity:0;
+    box-shadow:inset 0 0 120px 40px rgba(255,30,50,.55); transition:opacity .12s; }
+
+  /* ---------- 覆盖层 ---------- */
+  .overlay { position:absolute; inset:0; z-index:10; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:18px; text-align:center;
+    background:radial-gradient(ellipse at center, rgba(10,16,28,.88), rgba(4,6,10,.97)); }
+  .overlay h1 { font-size:44px; letter-spacing:10px; font-weight:800;
+    background:linear-gradient(90deg,#ff3b4e,#ffe93b,#3bff8e,#35e8ff,#3b6cff,#b44bff);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 18px rgba(120,180,255,.45)); }
+  .overlay h2 { font-size:15px; letter-spacing:6px; opacity:.7; font-weight:400; }
+  .overlay p { max-width:620px; font-size:14px; line-height:1.9; opacity:.85; padding:0 24px; }
+  .overlay .controls { display:grid; grid-template-columns:auto auto; gap:4px 18px;
+    font-size:13px; opacity:.85; text-align:left; }
+  .overlay .controls b { color:#9fd8ff; }
+  .overlay button { pointer-events:auto; cursor:pointer; margin-top:8px; padding:12px 46px;
+    font-size:18px; letter-spacing:4px; color:#eaf4ff; background:transparent;
+    border:1px solid rgba(150,200,255,.6); border-radius:30px;
+    box-shadow:0 0 18px rgba(90,160,255,.35), inset 0 0 14px rgba(90,160,255,.12);
+    transition:all .2s; font-family:inherit; }
+  .overlay button:hover { background:rgba(90,160,255,.15); box-shadow:0 0 30px rgba(120,190,255,.6); }
+  #deadStats { font-size:15px; color:#ffb3bb; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./lib/three.module.js"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="hud" class="hidden">
+  <div id="tl">
+    <div class="label">海洋复苏度 <span id="revivePct">0%</span></div>
+    <div class="bar"><div id="reviveFill"></div></div>
+    <div class="label">生命</div>
+    <div class="bar"><div id="hpFill" style="width:100%"></div></div>
+    <div id="stage">无色透明 · 体型 1.0</div>
+  </div>
+  <div id="tr"></div>
+  <div id="modes"></div>
+  <div id="fusionTag" class="hidden"></div>
+  <div id="toasts"></div>
+  <div id="hint">移动鼠标 转向 · <b>Shift</b> 冲刺 · <b>1-5</b> 切换光谱模式<br/>
+    <b>空格</b> 释放技能 · <b>Q</b> 光谱融合 · <b>X</b> 圣光形态</div>
+  <div id="dmg"></div>
+</div>
+
+<div id="start" class="overlay">
+  <h1>棱镜光鱼</h1>
+  <h2>PRISM LUMEN · 赛博光谱海洋</h2>
+  <p>这片海洋早已死寂——只剩黑白灰度的光影轮廓。你是一枚无色透明的小棱镜鱼。
+     吞噬游弋的光生物，收集七色光谱碎片，让棱镜身躯逐渐染上虹彩，
+     唤醒珊瑚、水母与海底霓虹之城，直到进化为折射整个光谱的七彩棱镜巨龙。</p>
+  <div class="controls">
+    <span><b>鼠标</b> 转向 / 俯仰</span><span><b>Shift</b> 冲刺（红色模式可撞碎岩石）</span>
+    <span><b>1</b> 红·烈焰冲刺　<b>2</b> 蓝·冰霜护盾</span><span><b>3</b> 绿·生命再生　<b>4</b> 紫·虚空潜行</span>
+    <span><b>5</b> 黄·电磁脉冲（空格释放）</span><span><b>Q</b> 融合当前与上一光谱</span>
+    <span><b>X</b> 集齐七色后 → 纯白圣光·太阳耀斑</span><span>吞噬比你小的鱼 · 躲开深海掠食者</span>
+  </div>
+  <button id="btnStart">潜 入 深 海</button>
+</div>
+
+<div id="dead" class="overlay hidden">
+  <h1 style="font-size:34px">光 芒 熄 灭</h1>
+  <p id="deadStats"></p>
+  <button id="btnRetry">重 新 折 射</button>
+</div>
+
+<div id="cdnfail" class="overlay" style="display:none">
+  <h2>资源加载失败</h2>
+  <p>Three.js（本地 lib/three.module.js）加载超时。请刷新页面重试，
+     或确认 lib/three.module.js 文件存在。</p>
+</div>
+
+<script type="module" src="./main.js"></script>
+<script>
+  setTimeout(function(){
+    if (!window.__GAME_BOOTED) document.getElementById('cdnfail').style.display = 'flex';
+  }, 9000);
+</script>
+</body>
+</html>
